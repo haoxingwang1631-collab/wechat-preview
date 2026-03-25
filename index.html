@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>微信消息排版预览工具</title>
+<style>
+/* ========== Reset & Base ========== */
+*, *::before, *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    height: 100%;
+    font-family: -apple-system, "PingFang SC", "Helvetica Neue", sans-serif;
+    background: #0f0f1a;
+    color: #e0e0e0;
+    overflow: hidden;
+}
+
+/* ========== Top Header ========== */
+.header {
+    height: 48px;
+    background: #1a1a2e;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    border-bottom: 1px solid #2a2a3e;
+    flex-shrink: 0;
+}
+
+.header h1 {
+    font-size: 16px;
+    font-weight: 600;
+    color: #fff;
+    letter-spacing: 0.5px;
+}
+
+.header .hint {
+    font-size: 12px;
+    color: #888;
+}
+
+.header .version {
+    font-size: 11px;
+    color: #555;
+    margin-left: 16px;
+}
+
+/* ========== Main Layout ========== */
+.main {
+    display: flex;
+    height: calc(100% - 48px);
+}
+
+/* ========== Left Panel: Input ========== */
+.input-panel {
+    width: 38%;
+    min-width: 320px;
+    background: #1a1a2e;
+    display: flex;
+    flex-direction: column;
+    padding: 20px 24px;
+    border-right: 1px solid #2a2a3e;
+}
+
+.input-panel .panel-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #ccc;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.input-panel .panel-title::before {
+    content: '';
+    display: inline-block;
+    width: 3px;
+    height: 14px;
+    background: #95EC69;
+    border-radius: 2px;
+}
+
+.input-panel textarea {
+    flex: 1;
+    background: #12121f;
+    border: 1px solid #2a2a3e;
+    border-radius: 8px;
+    padding: 16px;
+    font-family: -apple-system, "PingFang SC", "Helvetica Neue", sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+    color: #e0e0e0;
+    resize: none;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.input-panel textarea:focus {
+    border-color: #95EC69;
+}
+
+.input-panel textarea::placeholder {
+    color: #555;
+}
+
+.input-panel .char-count {
+    margin-top: 10px;
+    font-size: 12px;
+    color: #666;
+    text-align: right;
+}
+
+.input-panel .tips {
+    margin-top: 16px;
+    padding: 12px 14px;
+    background: #12121f;
+    border-radius: 8px;
+    border: 1px solid #2a2a3e;
+}
+
+.input-panel .tips p {
+    font-size: 12px;
+    color: #777;
+    line-height: 1.8;
+}
+
+.input-panel .tips p strong {
+    color: #95EC69;
+    font-weight: 500;
+}
+
+/* ========== Right Panel: Preview ========== */
+.preview-panel {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: #12121f;
+    overflow: auto;
+}
+
+.preview-wrapper {
+    display: flex;
+    align-items: flex-start;
+    gap: 0;
+    position: relative;
+}
+
+/* ========== iPhone Frame ========== */
+.iphone-frame {
+    width: 402px;
+    height: 874px;
+    border-radius: 48px;
+    background: #000;
+    padding: 3px;
+    box-shadow: 
+        0 0 0 2px #333,
+        0 20px 60px rgba(0,0,0,0.5),
+        inset 0 0 0 1px #222;
+    position: relative;
+    flex-shrink: 0;
+}
+
+.iphone-screen {
+    width: 100%;
+    height: 100%;
+    border-radius: 45px;
+    overflow: hidden;
+    background: #EDEDED;
+    display: flex;
+    flex-direction: column;
+}
+
+/* -- Status Bar with Dynamic Island -- */
+.status-bar {
+    height: 59px;
+    background: #EDEDED;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding: 0 28px 8px;
+    position: relative;
+    flex-shrink: 0;
+}
+
+.dynamic-island {
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 126px;
+    height: 36px;
+    background: #000;
+    border-radius: 20px;
+}
+
+.status-bar .time {
+    font-size: 15px;
+    font-weight: 600;
+    color: #000;
+}
+
+.status-bar .icons {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.status-bar .icons span {
+    font-size: 12px;
+    color: #000;
+    font-weight: 500;
+}
+
+/* Signal bars */
+.signal-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 1.5px;
+    height: 11px;
+}
+
+.signal-bars .bar {
+    width: 3px;
+    background: #000;
+    border-radius: 0.5px;
+}
+
+.signal-bars .bar:nth-child(1) { height: 3px; }
+.signal-bars .bar:nth-child(2) { height: 5px; }
+.signal-bars .bar:nth-child(3) { height: 7px; }
+.signal-bars .bar:nth-child(4) { height: 9px; }
+
+/* Battery */
+.battery {
+    display: flex;
+    align-items: center;
+    gap: 1px;
+}
+
+.battery-body {
+    width: 25px;
+    height: 12px;
+    border: 1.5px solid #000;
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    padding: 1.5px;
+}
+
+.battery-level {
+    width: 70%;
+    height: 100%;
+    background: #000;
+    border-radius: 1px;
+}
+
+.battery-tip {
+    width: 2px;
+    height: 5px;
+    background: #000;
+    border-radius: 0 1px 1px 0;
+}
+
+/* -- Navigation Bar -- */
+.nav-bar {
+    height: 44px;
+    background: #EDEDED;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    border-bottom: 0.5px solid #d5d5d5;
+    flex-shrink: 0;
+}
+
+.nav-back {
+    font-size: 18px;
+    color: #000;
+    margin-right: 4px;
+    display: flex;
+    align-items: center;
+}
+
+.nav-back svg {
+    width: 12px;
+    height: 20px;
+}
+
+.nav-bar .nav-title {
+    flex: 1;
+    text-align: center;
+    font-size: 17px;
+    font-weight: 600;
+    color: #000;
+    margin-right: 16px;
+}
+
+.nav-more {
+    font-size: 20px;
+    color: #000;
+    letter-spacing: 2px;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+}
+
+.nav-more .dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: #000;
+}
+
+/* -- Chat Area -- */
+.chat-area {
+    height: 688px;
+    background: #EDEDED;
+    overflow-y: auto;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 12px 0 8px;
+    position: relative;
+    flex-shrink: 0;
+}
+
+/* Timestamp */
+.msg-time {
+    text-align: center;
+    font-size: 12px;
+    color: #999;
+    padding: 8px 0 12px;
+}
+
+.chat-area::-webkit-scrollbar {
+    width: 0;
+}
+
+/* -- Message Bubble (Receiver / Group Chat) -- */
+.message-row {
+    display: flex;
+    justify-content: flex-start;
+    padding: 0 12px;
+    margin-bottom: 8px;
+}
+
+.bubble-wrapper {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    max-width: calc(100% - 12px);
+    flex-direction: row;
+}
+
+.avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 6px;
+    background: #ccc;
+    flex-shrink: 0;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.avatar svg {
+    width: 28px;
+    height: 28px;
+    fill: #fff;
+}
+
+/* Sender nickname in group chat */
+.sender-name {
+    font-size: 12px;
+    color: #999;
+    margin-bottom: 2px;
+    line-height: 1;
+}
+
+.bubble {
+    max-width: 279.5px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: #fff;
+    color: #000;
+    font-family: -apple-system, "PingFang SC", "Helvetica Neue", sans-serif;
+    font-size: 17px;
+    line-height: 24px;
+    letter-spacing: 0px;
+    word-break: normal;
+    overflow-wrap: break-word;
+    white-space: pre-wrap;
+    text-autospace: ideograph-alpha ideograph-numeric;
+    position: relative;
+}
+
+/* Bubble tail (left side, receiver) */
+.bubble::after {
+    content: '';
+    position: absolute;
+    top: 12px;
+    left: -6px;
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 6px 8px 6px 0;
+    border-color: transparent #fff transparent transparent;
+}
+
+/* Empty state */
+.empty-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    color: #999;
+    font-size: 14px;
+}
+
+/* -- Bottom Bar -- */
+.bottom-bar {
+    height: 83px;
+    background: #F6F6F6;
+    border-top: 0.5px solid #d5d5d5;
+    display: flex;
+    align-items: flex-start;
+    padding: 8px 12px 0;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.bottom-bar .voice-btn,
+.bottom-bar .emoji-btn,
+.bottom-bar .plus-btn {
+    width: 32px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #666;
+    flex-shrink: 0;
+}
+
+.bottom-bar .input-field {
+    flex: 1;
+    height: 34px;
+    background: #fff;
+    border: none;
+    border-radius: 4px;
+    padding: 0 8px;
+    font-size: 16px;
+    color: #ccc;
+    display: flex;
+    align-items: center;
+}
+
+/* ========== Ruler / Scale Bar ========== */
+.ruler-container {
+    position: relative;
+    width: 140px;
+    height: 688px;
+    margin-left: 4px;
+    margin-top: 106px;
+    flex-shrink: 0;
+}
+
+.ruler-start {
+    position: absolute;
+    left: 0;
+    top: 0;
+    display: flex;
+    align-items: center;
+}
+
+.ruler-start .tick {
+    width: 12px;
+    height: 1px;
+    background: #555;
+}
+
+.ruler-start .label {
+    margin-left: 6px;
+    font-size: 10px;
+    color: #666;
+}
+
+.ruler-line {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 1px;
+    height: 100%;
+    background: #444;
+}
+
+.ruler-mark {
+    position: absolute;
+    left: 0;
+    display: flex;
+    align-items: center;
+    transition: all 0.3s ease;
+}
+
+.ruler-mark .tick {
+    width: 20px;
+    height: 1px;
+    background: #666;
+    flex-shrink: 0;
+    transition: background 0.3s ease;
+}
+
+.ruler-mark .label {
+    margin-left: 6px;
+    font-size: 11px;
+    color: #888;
+    white-space: nowrap;
+    transition: color 0.3s ease;
+}
+
+.ruler-mark.half { top: 344px; }
+.ruler-mark.three-quarter { top: 516px; }
+.ruler-mark.full { top: 685px; }
+
+.ruler-mark.warn .tick { background: #FF9500; height: 2px; }
+.ruler-mark.warn .label { color: #FF9500; font-weight: 600; }
+.ruler-mark.danger .tick { background: #FF3B30; height: 2px; }
+.ruler-mark.danger .label { color: #FF3B30; font-weight: 600; }
+
+.bubble-indicator {
+    position: absolute;
+    left: 0;
+    display: flex;
+    align-items: center;
+    transition: top 0.15s ease;
+}
+
+.bubble-indicator .indicator-line {
+    width: 30px;
+    height: 2px;
+    background: #5B9BD5;
+    flex-shrink: 0;
+}
+
+.bubble-indicator .indicator-label {
+    margin-left: 6px;
+    font-size: 11px;
+    color: #5B9BD5;
+    white-space: nowrap;
+    font-weight: 600;
+    background: rgba(91, 155, 213, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.bubble-fill {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 3px;
+    background: rgba(91, 155, 213, 0.25);
+    border-radius: 0 2px 2px 0;
+    transition: height 0.15s ease;
+}
+
+/* ========== Responsive ========== */
+@media (max-width: 900px) {
+    .main { flex-direction: column; overflow: auto; }
+    .input-panel { width: 100%; min-width: unset; height: 200px; border-right: none; border-bottom: 1px solid #2a2a3e; }
+    .preview-panel { flex: 1; overflow: auto; }
+}
+</style>
+</head>
+<body>
+
+<!-- ===== Header ===== -->
+<div class="header">
+    <h1>📱 微信消息排版预览工具</h1>
+    <div style="display:flex;align-items:center;">
+        <span class="hint">基于 iPhone 17 Pro · 微信默认字体设置</span>
+        <span class="version">v3.6</span>
+    </div>
+</div>
+
+<!-- ===== Main Layout ===== -->
+<div class="main">
+
+    <!-- Left: Input Panel -->
+    <div class="input-panel">
+        <div class="panel-title">输入消息内容</div>
+        <textarea id="inputText" placeholder="在此粘贴或输入你要发送的消息文本...">1、 消耗概况（3.16-3.22）
+PCAD日收571万/周环比-5%/月同比-21%；AMS 6274万/环比-5%/同比-28%，占比 9%/环比-28%；环比下降主因激励通兑券库存回落
+
+2、 重点推进事项
+①PC小游戏：PC试玩开发中/AI扫码链路本周推技术方案评估；生态流量xTA策略2%正向/本周推5%；广告金提效方案本周启动
+
+②移动场景渗透：闪屏合约xTA策略Q音20%正向，争取本周全量+3k；激励端外倒计时已交微信排期本周反馈；信息流增信标签映射及来源优化开发中，争取清明前上线
+
+③链路&amp;模型：pLTV实验维持20%/GMV未显著需保持观察；智匹新人群包试点ROI0.3%→2%提升显著，本周推覆盖头部客户；试玩x起点20%实验本周沟通放量/视频沉浸流推全+2.5w，推进媒体覆盖</textarea>
+        <div class="char-count" id="charCount">0 字</div>
+        <div class="tips" style="margin-bottom:8px;">
+            <p><strong>🔧 气泡宽度调整</strong></p>
+            <p style="margin-top:6px;display:flex;align-items:center;gap:8px;">
+                <input type="range" id="maxWidthSlider" min="240" max="320" value="279.5" step="0.5" style="flex:1;accent-color:#95EC69;">
+                <span id="maxWidthValue" style="color:#95EC69;font-weight:600;font-size:13px;min-width:55px;text-align:right;">279.5px</span>
+            </p>
+            <p id="calibrateInfo" style="margin-top:4px;font-size:11px;color:#555;">固定 max-width: 279.5px（基于真机校准）</p>
+        </div>
+        <div class="tips">
+            <p><strong>💡 使用提示</strong></p>
+            <p>• 预览区严格模拟 iPhone 17 Pro 逻辑分辨率（402×874pt）</p>
+            <p>• 气泡宽度、字号、行高均对齐微信真机效果</p>
+            <p>• 右侧标尺标注了 <strong>半屏</strong>、<strong>3/4 屏</strong>、<strong>满屏</strong> 位置</p>
+            <p>• 绿色指示线显示当前气泡占屏比例</p>
+        </div>
+    </div>
+
+    <!-- Right: Preview Panel -->
+    <div class="preview-panel">
+        <div class="preview-wrapper">
+            <!-- iPhone 17 Pro Frame -->
+            <div class="iphone-frame">
+                <div class="iphone-screen">
+
+                    <!-- Status Bar -->
+                    <div class="status-bar">
+                        <div class="dynamic-island"></div>
+                        <span class="time">19:38</span>
+                        <div class="icons">
+                            <div class="signal-bars">
+                                <div class="bar"></div>
+                                <div class="bar"></div>
+                                <div class="bar"></div>
+                                <div class="bar"></div>
+                            </div>
+                            <span style="font-size:13px;font-weight:600;margin:0 2px;">5G</span>
+                            <div class="battery">
+                                <div class="battery-body">
+                                    <div class="battery-level"></div>
+                                </div>
+                                <div class="battery-tip"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Navigation Bar -->
+                    <div class="nav-bar">
+                        <div class="nav-back">
+                            <svg viewBox="0 0 12 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M10 2L2 10L10 18" stroke="#07C160" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            <span style="font-size:15px;color:#07C160;margin-left:2px;">微信</span>
+                        </div>
+                        <div class="nav-title">行二游戏小分队(4)</div>
+                        <div class="nav-more"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+                    </div>
+
+                    <!-- Chat Area -->
+                    <div class="chat-area" id="chatArea">
+                        <div class="empty-state" id="emptyState">
+                            在左侧输入文字，预览效果将在此显示
+                        </div>
+                    </div>
+
+                    <!-- Bottom Bar -->
+                    <div class="bottom-bar">
+                        <div class="voice-btn">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" fill="#666"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" fill="#666"/></svg>
+                        </div>
+                        <div class="input-field" style="color:#ccc;font-size:14px;"></div>
+                        <div class="emoji-btn">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9.5" stroke="#666" stroke-width="1.5"/><circle cx="9" cy="10.5" r="1.2" fill="#666"/><circle cx="15" cy="10.5" r="1.2" fill="#666"/><path d="M8.5 14.5c.83 1.5 2.17 2.5 3.5 2.5s2.67-1 3.5-2.5" stroke="#666" stroke-width="1.3" stroke-linecap="round"/></svg>
+                        </div>
+                        <div class="plus-btn">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9.5" stroke="#666" stroke-width="1.5"/><path d="M12 7.5v9M7.5 12h9" stroke="#666" stroke-width="1.5" stroke-linecap="round"/></svg>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Ruler -->
+            <div class="ruler-container" id="rulerContainer">
+                <div class="ruler-line"></div>
+                <div class="bubble-fill" id="bubbleFill"></div>
+                <div class="ruler-start"><div class="tick"></div><div class="label">顶部 0%</div></div>
+                <div class="ruler-mark half" id="markHalf"><div class="tick"></div><div class="label">── 半屏 50%</div></div>
+                <div class="ruler-mark three-quarter" id="markThreeQuarter"><div class="tick"></div><div class="label">── ¾ 屏 75%</div></div>
+                <div class="ruler-mark full" id="markFull"><div class="tick"></div><div class="label">── 满屏 100%</div></div>
+                <div class="bubble-indicator" id="bubbleIndicator" style="display:none;">
+                    <div class="indicator-line"></div>
+                    <div class="indicator-label" id="indicatorLabel"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+(function() {
+    'use strict';
+
+    const CHAT_AREA_HEIGHT = 688;
+
+    const inputText = document.getElementById('inputText');
+    const charCount = document.getElementById('charCount');
+    const chatArea = document.getElementById('chatArea');
+    const emptyState = document.getElementById('emptyState');
+    const bubbleFill = document.getElementById('bubbleFill');
+    const bubbleIndicator = document.getElementById('bubbleIndicator');
+    const indicatorLabel = document.getElementById('indicatorLabel');
+    const markHalf = document.getElementById('markHalf');
+    const markThreeQuarter = document.getElementById('markThreeQuarter');
+    const markFull = document.getElementById('markFull');
+
+    let messageRow = null;
+    let bubbleEl = null;
+
+    // Check if text-autospace is supported by the browser
+    let hasNativeAutospace = false;
+    try {
+        hasNativeAutospace = CSS.supports('text-autospace', 'ideograph-alpha ideograph-numeric')
+                          || CSS.supports('text-autospace', 'normal');
+    } catch(e) {
+        hasNativeAutospace = false;
+    }
+    
+    console.log('text-autospace native support:', hasNativeAutospace);
+
+    // CJK Ideograph detection (Han characters only - matches iOS text-autospace behavior)
+    function isIdeograph(ch) {
+        const code = ch.charCodeAt(0);
+        if (code >= 0x4E00 && code <= 0x9FFF) return true;  // CJK Unified Ideographs
+        if (code >= 0x3400 && code <= 0x4DBF) return true;  // CJK Unified Extension A
+        if (code >= 0xF900 && code <= 0xFAFF) return true;  // CJK Compatibility Ideographs
+        return false;
+    }
+
+    // Latin letter or digit (matches iOS text-autospace: ideograph-alpha ideograph-numeric)
+    function isAlphaNumeric(ch) {
+        return /[a-zA-Z0-9]/.test(ch);
+    }
+
+    // ===== Render with manual autospace =====
+    // Matches iOS behavior: inserts space between Han ideographs and letters/digits
+    function renderWithAutospace(text) {
+        const result = document.createDocumentFragment();
+        const chars = Array.from(text);
+        let textBuffer = '';
+        
+        function flushBuffer() {
+            if (textBuffer) {
+                result.appendChild(document.createTextNode(textBuffer));
+                textBuffer = '';
+            }
+        }
+        
+        for (let i = 0; i < chars.length; i++) {
+            const ch = chars[i];
+            if (i > 0 && ch !== '\n' && chars[i-1] !== '\n') {
+                const prev = chars[i-1];
+                if ((isIdeograph(prev) && isAlphaNumeric(ch)) || 
+                    (isAlphaNumeric(prev) && isIdeograph(ch))) {
+                    flushBuffer();
+                    const spacer = document.createElement('span');
+                    spacer.style.cssText = 'display:inline-block;width:2.125px;height:0;overflow:hidden;';
+                    result.appendChild(spacer);
+                }
+            }
+            textBuffer += ch;
+        }
+        flushBuffer();
+        return result;
+    }
+
+    function createMessageBubble() {
+        const timeDiv = document.createElement('div');
+        timeDiv.className = 'msg-time';
+        const now = new Date();
+        timeDiv.textContent = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+
+        messageRow = document.createElement('div');
+        messageRow.className = 'message-row';
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'bubble-wrapper';
+
+        const avatar = document.createElement('div');
+        avatar.className = 'avatar';
+        avatar.innerHTML = '<svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" fill="#fff"/></svg>';
+
+        // Bubble content column (nickname + bubble)
+        const bubbleCol = document.createElement('div');
+        bubbleCol.style.cssText = 'display:flex;flex-direction:column;';
+        
+        // Sender nickname (group chat)
+        const nameEl = document.createElement('div');
+        nameEl.className = 'sender-name';
+        nameEl.textContent = '发送者';
+        
+        bubbleEl = document.createElement('div');
+        bubbleEl.className = 'bubble';
+        bubbleEl.style.maxWidth = maxWidthSlider.value + 'px';
+
+        bubbleCol.appendChild(nameEl);
+        bubbleCol.appendChild(bubbleEl);
+        wrapper.appendChild(avatar);
+        wrapper.appendChild(bubbleCol);
+        messageRow.appendChild(wrapper);
+        messageRow._timeDiv = timeDiv;
+    }
+
+    function updatePreview() {
+        const text = inputText.value;
+        charCount.textContent = text.length + ' 字';
+
+        if (!text.trim()) {
+            chatArea.innerHTML = '';
+            chatArea.appendChild(emptyState);
+            emptyState.style.display = 'flex';
+            bubbleFill.style.height = '0';
+            bubbleIndicator.style.display = 'none';
+            resetRulerMarks();
+            return;
+        }
+
+        if (!messageRow) createMessageBubble();
+
+        // Use native text-autospace if supported, otherwise use JS fallback
+        if (hasNativeAutospace) {
+            bubbleEl.textContent = text;
+        } else {
+            bubbleEl.innerHTML = '';
+            bubbleEl.appendChild(renderWithAutospace(text));
+        }
+
+        chatArea.innerHTML = '';
+        emptyState.style.display = 'none';
+        chatArea.appendChild(messageRow._timeDiv);
+        chatArea.appendChild(messageRow);
+
+        requestAnimationFrame(() => {
+            const bubbleRect = bubbleEl.getBoundingClientRect();
+            const bubbleHeight = Math.round(bubbleRect.height);
+            const messageRowHeight = messageRow.offsetHeight + messageRow._timeDiv.offsetHeight;
+            const percentage = (bubbleHeight / CHAT_AREA_HEIGHT * 100);
+
+            const fillHeight = Math.min(messageRowHeight, CHAT_AREA_HEIGHT);
+            bubbleFill.style.height = fillHeight + 'px';
+
+            bubbleIndicator.style.display = 'flex';
+            bubbleIndicator.style.top = Math.min(fillHeight, CHAT_AREA_HEIGHT) + 'px';
+            
+            let statusText = '';
+            if (percentage <= 50) statusText = ' ✅';
+            else if (percentage <= 75) statusText = ' ⚠️ 较长';
+            else statusText = ' 🔴 过长';
+            
+            indicatorLabel.textContent = bubbleHeight + 'px · 占 ' + percentage.toFixed(1) + '%' + statusText;
+            updateRulerMarks(bubbleHeight);
+            chatArea.scrollTop = chatArea.scrollHeight;
+        });
+    }
+
+    function resetRulerMarks() {
+        markHalf.className = 'ruler-mark half';
+        markThreeQuarter.className = 'ruler-mark three-quarter';
+        markFull.className = 'ruler-mark full';
+    }
+
+    function updateRulerMarks(bubbleHeight) {
+        resetRulerMarks();
+        if (bubbleHeight >= 344) markHalf.classList.add('warn');
+        if (bubbleHeight >= 516) markThreeQuarter.classList.add('warn');
+        if (bubbleHeight >= 688) {
+            markFull.classList.add('danger');
+            markThreeQuarter.classList.remove('warn');
+            markThreeQuarter.classList.add('danger');
+        }
+    }
+
+    function updateTime() {
+        const now = new Date();
+        document.querySelector('.status-bar .time').textContent = 
+            now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+    }
+
+    // Max-width slider
+    const maxWidthSlider = document.getElementById('maxWidthSlider');
+    const maxWidthValue = document.getElementById('maxWidthValue');
+    
+    maxWidthSlider.addEventListener('input', function() {
+        const val = this.value;
+        maxWidthValue.textContent = val + 'px';
+        // Update the CSS for .bubble
+        if (bubbleEl) {
+            bubbleEl.style.maxWidth = val + 'px';
+        }
+        // Also update the default style
+        document.querySelectorAll('.bubble').forEach(b => b.style.maxWidth = val + 'px');
+        updatePreview();
+    });
+
+    // Fixed max-width: 279.5px (calibrated against real device)
+    
+    document.getElementById('calibrateBtn')?.addEventListener('click', function() {});
+    
+    inputText.addEventListener('input', updatePreview);
+    // Also handle programmatic value changes and paste events
+    inputText.addEventListener('change', updatePreview);
+    inputText.addEventListener('paste', function() {
+        setTimeout(updatePreview, 0);
+    });
+
+    updateTime();
+    setInterval(updateTime, 30000);
+
+    // Auto-preview if text is pre-filled (with multiple fallbacks)
+    function tryAutoPreview() {
+        if (inputText.value && inputText.value.trim()) {
+            updatePreview();
+        }
+    }
+    // Try immediately
+    tryAutoPreview();
+    // Also try after a short delay (in case textarea value is set asynchronously)
+    setTimeout(tryAutoPreview, 100);
+    // Also try on window load
+    window.addEventListener('load', tryAutoPreview);
+})();
+</script>
+</body>
+</html>
